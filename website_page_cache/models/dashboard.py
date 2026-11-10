@@ -205,6 +205,27 @@ class PageCacheDashboard(models.TransientModel):
                   tmpfs=human_bytes(tmpfs.get("size")) if tmpfs else "-",
                   avail=human_bytes(mem.get("available", 0) // 2) if mem else "-"),
         ]
+        short = result["shortfall"]
+        if short["memory"]:
+            lines.append(env._(
+                "Additional RAM needed for a RAM cache: about %(extra)s more memory on this server "
+                "(%(wanted)s for the cache including a safety margin, and the cache may use at most half "
+                "of the available memory, now %(avail)s).",
+                extra=human_bytes(short["memory"]), wanted=human_bytes(result["wanted"]),
+                avail=human_bytes(mem.get("available", 0))))
+        elif result["verdict"] != "unavailable":
+            lines.append(env._(
+                "Additional RAM needed for a RAM cache: none - %(wanted)s are enough including a safety margin.",
+                wanted=human_bytes(result["wanted"])))
+        settings_hint = []
+        if short["budget"]:
+            settings_hint.append(env._("raise the RAM budget to at least %(size)s",
+                                       size=human_bytes(result["wanted"])))
+        if short["tmpfs"]:
+            settings_hint.append(env._("enlarge the tmpfs /dev/shm to at least %(size)s (mount option size=)",
+                                       size=human_bytes(result["wanted"])))
+        if settings_hint:
+            lines.append(env._("Settings to change: %(hints)s.", hints="; ".join(settings_hint)))
         assumption = env._(
             "Counted: published products, shop list pages, categories, blog posts and blog lists, per language "
             "of each website. Not counted: pages for other pricelists or countries - add some margin.")

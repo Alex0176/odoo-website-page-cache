@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 09:57+0000\n"
-"PO-Revision-Date: 2026-11-10 09:57+0000\n"
+"POT-Creation-Date: 2026-11-10 10:50+0000\n"
+"PO-Revision-Date: 2026-11-10 10:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -43,6 +43,23 @@ msgstr ""
 #. odoo-python
 #: code:addons/website_page_cache/models/dashboard.py:0
 msgid "7 days"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Additional RAM needed for a RAM cache: about %(extra)s more memory on this "
+"server (%(wanted)s for the cache including a safety margin, and the cache "
+"may use at most half of the available memory, now %(avail)s)."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Additional RAM needed for a RAM cache: none - %(wanted)s are enough "
+"including a safety margin."
 msgstr ""
 
 #. module: website_page_cache
@@ -461,6 +478,12 @@ msgid "Settings"
 msgstr ""
 
 #. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Settings to change: %(hints)s."
+msgstr ""
+
+#. module: website_page_cache
 #: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__stats_html
 #: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
 msgid "Statistics"
@@ -538,5 +561,17 @@ msgstr ""
 #. module: website_page_cache
 #. odoo-python
 #: code:addons/website_page_cache/models/dashboard.py:0
+msgid "enlarge the tmpfs /dev/shm to at least %(size)s (mount option size=)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
 msgid "measured average of the cached pages"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "raise the RAM budget to at least %(size)s"
 msgstr ""

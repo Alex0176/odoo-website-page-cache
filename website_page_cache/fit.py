@@ -87,6 +87,14 @@ def estimate(env, dbname, ram_budget_bytes):
     if mem.get("available"):
         limits.append(mem["available"] // 2)
     limit = min(limits)
+    wanted = int(need / SAFETY)  # room needed to say "fits"
+    available = mem.get("available", 0)
+    shortfall = {
+        "budget": max(0, wanted - ram_budget_bytes),
+        "tmpfs": max(0, wanted - tmpfs["size"]) if tmpfs.get("size") else 0,
+        # physical memory: the cache may use at most half of what is available
+        "memory": max(0, 2 * wanted - available) if available else 0,
+    }
     if not store.ram_available():
         verdict = "unavailable"
     elif need <= limit * SAFETY:
@@ -97,5 +105,5 @@ def estimate(env, dbname, ram_budget_bytes):
         verdict = "too_big"
     return {
         "rows": rows, "pages": pages, "page_bytes": page_bytes, "measured": bool(measured), "need": need,
-        "limit": limit, "budget": ram_budget_bytes, "mem": mem, "tmpfs": tmpfs, "verdict": verdict,
+        "limit": limit, "budget": ram_budget_bytes, "wanted": wanted, "shortfall": shortfall, "mem": mem, "tmpfs": tmpfs, "verdict": verdict,
     }

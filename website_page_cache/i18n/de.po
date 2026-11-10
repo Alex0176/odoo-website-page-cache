@@ -571,3 +571,45 @@ msgstr "angenommen, noch nichts gecacht"
 #: code:addons/website_page_cache/models/dashboard.py:0
 msgid "measured average of the cached pages"
 msgstr "gemessener Durchschnitt der gecachten Seiten"
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Additional RAM needed for a RAM cache: about %(extra)s more memory on this "
+"server (%(wanted)s for the cache including a safety margin, and the cache "
+"may use at most half of the available memory, now %(avail)s)."
+msgstr ""
+"Zusätzlicher RAM für einen RAM-Cache: etwa %(extra)s mehr Arbeitsspeicher "
+"auf diesem Server (%(wanted)s für den Cache inklusive Sicherheitsreserve; "
+"der Cache darf höchstens die Hälfte des verfügbaren Speichers belegen, "
+"derzeit %(avail)s)."
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Additional RAM needed for a RAM cache: none - %(wanted)s are enough "
+"including a safety margin."
+msgstr ""
+"Zusätzlicher RAM für einen RAM-Cache: keiner - %(wanted)s genügen "
+"einschließlich Sicherheitsreserve."
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Settings to change: %(hints)s."
+msgstr "Einstellungen anpassen: %(hints)s."
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "enlarge the tmpfs /dev/shm to at least %(size)s (mount option size=)"
+msgstr ""
+"das tmpfs /dev/shm auf mindestens %(size)s vergrößern (Mount-Option size=)"
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "raise the RAM budget to at least %(size)s"
+msgstr "das RAM-Budget auf mindestens %(size)s erhöhen"

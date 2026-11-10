@@ -37,6 +37,9 @@ products, shop list pages, categories, blog posts, blog lists, times the languag
 measures the real size of the cached pages (a default is used until something is cached), and
 compares the result with the configured RAM budget, the size of the tmpfs and half of the available
 memory. Verdicts: *fits*, *tight*, *too big*, *unavailable*.
+It also states how much additional RAM a RAM cache would need on the server (including a safety
+margin, and respecting that the cache may use at most half of the available memory) and which
+settings to change (RAM budget, tmpfs size).
 
 ## Changes remove pages from the cache
 

@@ -96,6 +96,18 @@ class TestPageCache(TransactionCase):
             self.assertEqual(fit.estimate(self.env, "db", budget * 2)["verdict"], "fits")
             self.assertEqual(fit.estimate(self.env, "db", int(budget * 1.1))["verdict"], "tight")
             self.assertEqual(fit.estimate(self.env, "db", budget // 2)["verdict"], "too_big")
+            self.assertEqual(fit.estimate(self.env, "db", budget * 2)["shortfall"],
+                             {"budget": 0, "tmpfs": 0, "memory": 0})
+            self.assertEqual(fit.estimate(self.env, "db", budget // 2)["shortfall"]["budget"], int(budget / 0.8) - budget // 2)
+        with patch.object(store, "ram_available", return_value=True), patch.object(
+            fit, "count_pages", return_value=[{"pages": 1000}]
+        ), patch.object(fit, "meminfo", return_value={"available": 2 * 10**6}), patch.object(
+            fit, "tmpfs_info", return_value={"size": 10**6}
+        ), patch.object(store, "average_size", return_value=1000):
+            short = fit.estimate(self.env, "db", 10**7)["shortfall"]
+            self.assertEqual(short["budget"], 0)
+            self.assertEqual(short["tmpfs"], 250000)  # 1 MB / 0.8 - 1 MB
+            self.assertEqual(short["memory"], 500000)  # 2 * 1.25 MB - 2 MB
         with patch.object(store, "ram_available", return_value=False):
             self.assertEqual(fit.estimate(self.env, "db", 10**9)["verdict"], "unavailable")
 
