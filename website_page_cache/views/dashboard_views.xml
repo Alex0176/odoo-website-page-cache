@@ -19,6 +19,7 @@
                     <group string="Settings">
                         <group>
                             <field name="enabled"/>
+                            <field name="pages"/>
                             <field name="backend"/>
                         </group>
                         <group>
@@ -26,6 +27,9 @@
                             <field name="max_mb_ram"/>
                             <field name="max_mb_file"/>
                         </group>
+                    </group>
+                    <group>
+                        <field name="exclude" placeholder="/contactus&#10;/event/*"/>
                     </group>
                     <group string="Status">
                         <group>

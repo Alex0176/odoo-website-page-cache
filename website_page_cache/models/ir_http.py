@@ -44,6 +44,7 @@ LINK_PRODUCT = re.compile(rb"/shop/(?!category/)[^/\"'?#\s]*?-(\d+)(?![\w-])")
 LINK_PRODUCT_ATTR = re.compile(rb"data-product-template-id=[\"'](\d+)[\"']")
 LINK_BLOG_POST = re.compile(rb"/blog/[^/\"'?#\s]+/[^/\"'?#\s]*?-(\d+)(?![\w-])")
 LINK_IMAGE = re.compile(rb"/web/image/([a-z][a-z0-9_.]*)/(\d+)/")
+LINK_ATTACHMENT = re.compile(rb"/web/(?:image|content)/(\d+)(?![\w.])")
 MAX_DEPS = 3000
 
 
@@ -85,6 +86,44 @@ class IrHttp(models.AbstractModel):
         return result
 
     @classmethod
+    def _serve_page(cls):
+        """Pages of the website builder (home page, contact page, ...) are served here, not by a
+        controller, so this is where they enter the cache."""
+        ctx = None
+        started = time.monotonic()
+        try:
+            ctx = cls._page_cache_context(None)
+        except Exception:
+            _logger.exception("page cache: lookup failed, rendering normally")
+        if ctx:
+            try:
+                hit = cls._page_cache_hit(ctx)
+            except Exception:
+                _logger.exception("page cache: reading failed, rendering normally")
+                hit = None
+            if hit is not None:
+                stats.count(request.db, ctx["website_id"], hits=1, hit_time=time.monotonic() - started,
+                            bytes_served=len(hit.get_data()))
+                cls._page_cache_flush_stats()
+                return hit
+            try:
+                ctx["snapshot"] = changes.current_snapshot(request.env.cr)
+            except Exception:
+                _logger.exception("page cache: no snapshot, rendering without storing")
+                ctx = None
+        rendered = time.monotonic()
+        result = super()._serve_page()
+        if ctx and isinstance(result, Response):
+            try:
+                if result.is_qweb:
+                    result.flatten()
+                result = cls._page_cache_store(ctx, result, time.monotonic() - rendered)
+            except Exception:
+                _logger.exception("page cache: storing failed")
+            cls._page_cache_flush_stats()
+        return result
+
+    @classmethod
     def _page_cache_flush_stats(cls):
         try:
             stats.maybe_flush(request.db)
@@ -93,14 +132,18 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _page_cache_context(cls, endpoint):
+        """``endpoint`` is the controller method, or None for a website builder page."""
         httprequest = request.httprequest
+        if endpoint is not None and (
+            not endpoint.routing.get("website")
+            or endpoint.routing.get("type") != "http"
+            or not CACHEABLE_PATHS.match(httprequest.path)
+        ):
+            return None
         if (
             httprequest.method != "GET"
             or httprequest.query_string
             or httprequest.headers.get("Range")
-            or not endpoint.routing.get("website")
-            or endpoint.routing.get("type") != "http"
-            or not CACHEABLE_PATHS.match(httprequest.path)
             or not getattr(request, "website", None)
             or not request.db
         ):
@@ -114,6 +157,8 @@ class IrHttp(models.AbstractModel):
         st = settings.get(cr, request.db)
         if not st["enabled"] or not st["ready"]:
             return None
+        if endpoint is None and (not st["pages"] or settings.excluded(st["exclude"], cls._page_cache_plain_path())):
+            return None
         website = request.website
         pricelist = getattr(request, "pricelist", None)
         fiscal_position = getattr(request, "fiscal_position", None)
@@ -125,7 +170,18 @@ class IrHttp(models.AbstractModel):
         ]
         index = changes.refresh(cr, request.db, st["ttl"] + 3600)
         return {"key": key, "backend": st["backend"], "ttl": st["ttl"], "max_bytes": st["max_bytes"],
-                "index": index, "website_id": website.id}
+                "index": index, "website_id": website.id, "builder_page": endpoint is None}
+
+    @classmethod
+    def _page_cache_plain_path(cls):
+        """The path without the language prefix, as the exclude patterns are written."""
+        path = request.httprequest.path
+        prefix = "/" + request.lang.url_code
+        if path == prefix:
+            return "/"
+        if path.startswith(prefix + "/"):
+            return path[len(prefix):]
+        return path
 
     @classmethod
     def _page_cache_hit(cls, ctx):
@@ -166,7 +222,7 @@ class IrHttp(models.AbstractModel):
             request.session.touch()
 
     @classmethod
-    def _page_cache_dependencies(cls, path, body, main_object):
+    def _page_cache_dependencies(cls, path, body, main_object, builder_page=False):
         """Tags of everything the page shows (see ``triggers``)."""
         deps = {changes.GLOBAL_TAG}
         partner = request.website.company_id.partner_id
@@ -180,9 +236,14 @@ class IrHttp(models.AbstractModel):
             deps.add(f"blog.post:{int(match.group(1))}")
         for match in LINK_IMAGE.finditer(body):
             deps.add(f"{match.group(1).decode()}:{int(match.group(2))}")
+        for match in LINK_ATTACHMENT.finditer(body):
+            deps.add(f"ir.attachment:{int(match.group(1))}")
         model = getattr(main_object, "_name", None)
         if model in ("product.template", "blog.post") and main_object.id:
             deps.add(f"{model}:{main_object.id}")
+        if builder_page:
+            # dynamic snippets may list products or blog posts anywhere on a builder page
+            deps.update(("product.template:0", "blog.post:0"))
         if SHOP_LISTING.match(path):
             deps.add("product.template:0")
         if BLOG_LISTING.match(path):
@@ -215,7 +276,7 @@ class IrHttp(models.AbstractModel):
             "template": template if isinstance(template, str) else None,
             "created": time.time(),
             "snapshot": ctx["snapshot"],
-            "deps": cls._page_cache_dependencies(path, body, main_object),
+            "deps": cls._page_cache_dependencies(path, body, main_object, ctx["builder_page"]),
             "path": path,
             "host": request.httprequest.host,
             "lang": request.lang.code,

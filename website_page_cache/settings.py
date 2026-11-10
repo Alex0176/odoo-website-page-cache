@@ -1,6 +1,7 @@
 # Copyright 2026 Biricon IT Services GmbH
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 """Settings in ``ir.config_parameter``, read at most every ``REFRESH_SECONDS`` per process."""
+import fnmatch
 import threading
 import time
 
@@ -16,6 +17,8 @@ DEFAULTS = {
     "ttl_hours": "12",
     "max_mb_file": "1024",
     "max_mb_ram": "256",
+    "pages": "1",
+    "exclude": "",
 }
 
 _lock = threading.Lock()
@@ -61,6 +64,9 @@ def get(cr, dbname):
             "enabled": params["enabled"].strip().lower() not in ("0", "false", "no", ""),
             "ready": cr.fetchone()[0] is not None,
             "backend": backend,
+            "pages": params["pages"].strip().lower() not in ("0", "false", "no", ""),
+            "exclude": [line.strip() for line in params["exclude"].splitlines()
+                        if line.strip() and not line.strip().startswith("#")],
             "ttl": max(60, int(_number(params["ttl_hours"], 12) * 3600)),
             "max_bytes": int(_number(params["max_mb_ram" if backend == "ram" else "max_mb_file"], 256) * 1048576),
         }
@@ -70,3 +76,8 @@ def get(cr, dbname):
 
 def reset(dbname):
     _state.pop(dbname, None)
+
+
+def excluded(patterns, path):
+    """Does ``path`` (without language prefix) match one of the glob ``patterns``?"""
+    return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)

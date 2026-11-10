@@ -140,12 +140,13 @@ msgstr "Cache leeren"
 #: code:addons/website_page_cache/models/dashboard.py:0
 msgid ""
 "Counted: published products, shop list pages, categories, blog posts and "
-"blog lists, per language of each website. Not counted: pages for other "
-"pricelists or countries - add some margin."
+"blog lists and pages of the website builder, per language of each website. "
+"Not counted: pages for other pricelists or countries - add some margin."
 msgstr ""
 "Gezählt: veröffentlichte Produkte, Shop-Listenseiten, Kategorien, "
-"Blogbeiträge und Bloglisten je Sprache jeder Webseite. Nicht gezählt: Seiten"
-" für andere Preislisten oder Länder – etwas Reserve einplanen."
+"Blogbeiträge, Bloglisten und Seiten des Website-Builders je Sprache jeder "
+"Webseite. Nicht gezählt: Seiten für andere Preislisten oder Länder – etwas "
+"Reserve einplanen."
 
 #. module: website_page_cache
 #: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__create_uid
@@ -613,3 +614,37 @@ msgstr ""
 #: code:addons/website_page_cache/models/dashboard.py:0
 msgid "raise the RAM budget to at least %(size)s"
 msgstr "das RAM-Budget auf mindestens %(size)s erhöhen"
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__pages
+msgid "Cache website pages"
+msgstr "Webseiten-Seiten zwischenspeichern"
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_dashboard__pages
+msgid ""
+"Also serve the pages made with the website builder (home page, contact "
+"page, ...) from the cache."
+msgstr ""
+"Auch die mit dem Website-Builder erstellten Seiten (Startseite, "
+"Kontaktseite, ...) aus dem Cache ausliefern."
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__exclude
+msgid "Never cache"
+msgstr "Nie zwischenspeichern"
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_dashboard__exclude
+msgid ""
+"One path per line, * as wildcard, without language prefix, e.g. /contactus "
+"or /event/*. Lines starting with # are ignored."
+msgstr ""
+"Ein Pfad je Zeile, * als Platzhalter, ohne Sprachpräfix, z. B. /contactus "
+"oder /event/*. Zeilen mit # werden ignoriert."
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Website pages"
+msgstr "Website-Seiten"

@@ -2,7 +2,7 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 """Will the websites fit into a RAM cache? An estimate from the content, not a promise.
 
-Pages = (products + shop list pages + categories + blog posts + blogs + 1) x languages, per
+Pages = (products + shop list pages + categories + blog posts + blogs + 1 + website pages) x languages, per
 website. The size of a page is measured from the entries already cached (average of the newest
 400) or assumed to be ``DEFAULT_PAGE_BYTES``. The RAM cache is a tmpfs (``/dev/shm``) shared by all
 workers, so the estimate is the total, not total x workers.
@@ -56,9 +56,10 @@ def count_pages(env):
         categories = _count(env, "product.public.category", [("website_id", "in", multi)])
         posts = _count(env, "blog.post", [("is_published", "=", True), ("website_id", "in", multi)])
         blogs = _count(env, "blog.blog", [("website_id", "in", multi)])
+        builder = _count(env, "website.page", [("is_published", "=", True), ("website_id", "in", multi)])
         ppg = getattr(website, "shop_ppg", 0) or SHOP_PAGE_SIZE
         shop_pages = math.ceil(products / ppg) if products else 0
-        per_language = products + shop_pages + categories + posts + blogs + (1 if posts else 0)
+        per_language = products + shop_pages + categories + posts + blogs + (1 if posts else 0) + builder
         languages = len(website.language_ids) or 1
         rows.append({
             "website": website.display_name,
@@ -66,6 +67,7 @@ def count_pages(env):
             "products": products,
             "categories": categories,
             "posts": posts,
+            "builder": builder,
             "pages_per_language": per_language,
             "pages": per_language * languages,
         })

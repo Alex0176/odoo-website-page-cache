@@ -26,6 +26,13 @@ class PageCacheDashboard(models.TransientModel):
     enabled = fields.Boolean(
         help="Serve public shop and blog pages from the cache. Switching it off sends every visitor to "
         "the normal rendering at once.")
+    pages = fields.Boolean(
+        string="Cache website pages",
+        help="Also serve the pages made with the website builder (home page, contact page, ...) from the cache.")
+    exclude = fields.Text(
+        string="Never cache",
+        help="One path per line, * as wildcard, without language prefix, e.g. /contactus or /event/*. "
+        "Lines starting with # are ignored.")
     backend = fields.Selection(
         [("auto", "Automatic"), ("file", "Files on disk"), ("ram", "RAM (shared, tmpfs)")],
         help="Automatic uses RAM while all pages fit into the RAM budget, otherwise files. "
@@ -68,6 +75,8 @@ class PageCacheDashboard(models.TransientModel):
         params = settings.read_params(self.env.cr)
         res.update({
             "enabled": params["enabled"].strip().lower() not in ("0", "false", "no", ""),
+            "pages": params["pages"].strip().lower() not in ("0", "false", "no", ""),
+            "exclude": params["exclude"],
             "backend": params["backend"] if params["backend"] in ("auto", "file", "ram") else "auto",
             "ttl_hours": settings._number(params["ttl_hours"], 12),
             "max_mb_file": int(settings._number(params["max_mb_file"], 1024)),
@@ -82,6 +91,8 @@ class PageCacheDashboard(models.TransientModel):
         pushed = False
         for name, value in (
             ("enabled", lambda: "1" if rec.enabled else "0"),
+            ("pages", lambda: "1" if rec.pages else "0"),
+            ("exclude", lambda: rec.exclude or ""),
             ("backend", lambda: rec.backend or "auto"),
             ("ttl_hours", lambda: str(max(rec.ttl_hours, 0.1))),
             ("max_mb_file", lambda: str(max(rec.max_mb_file, 1))),
@@ -133,10 +144,10 @@ class PageCacheDashboard(models.TransientModel):
 
     def _compute_stats_html(self):
         env = self.env
-        head = "".join(f"<th class='text-end'>{escape(h)}</th>" for h in (
+        head = "".join(f"<th class='text-end'>{escape(h)}</th>" if i else f"<th>{escape(h)}</th>" for i, h in enumerate((
             env._("Period"), env._("Served from cache"), env._("Rendered"), env._("Hit rate"),
             env._("Removed (changed/expired)"), env._("Render time"), env._("Cache time"),
-            env._("Estimated server time saved"), env._("Traffic from cache")))
+            env._("Estimated server time saved"), env._("Traffic from cache"))))
         body = ""
         for label, days in ((env._("Today"), 1), (env._("7 days"), 7), (env._("30 days"), 30)):
             hits, misses, stale, hit_time, miss_time, served = self._window(days)
@@ -183,14 +194,15 @@ class PageCacheDashboard(models.TransientModel):
                             "text-danger"),
         }
         text, css = verdicts[result["verdict"]]
-        head = "".join(f"<th class='text-end'>{escape(h)}</th>" for h in (
+        head = "".join(f"<th class='text-end'>{escape(h)}</th>" if i else f"<th>{escape(h)}</th>" for i, h in enumerate((
             env._("Website"), env._("Languages"), env._("Products"), env._("Categories"), env._("Blog posts"),
-            env._("Pages per language"), env._("Pages")))
+            env._("Website pages"),
+            env._("Pages per language"), env._("Pages"))))
         body = "".join(
             "<tr><td>{}</td>{}</tr>".format(
                 escape(row["website"]),
                 "".join(f"<td class='text-end'>{row[k]:,}</td>" for k in (
-                    "languages", "products", "categories", "posts", "pages_per_language", "pages")))
+                    "languages", "products", "categories", "posts", "builder", "pages_per_language", "pages")))
             for row in result["rows"])
         mem, tmpfs = result["mem"], result["tmpfs"]
         size_note = (env._("measured average of the cached pages") if result["measured"]
@@ -227,7 +239,7 @@ class PageCacheDashboard(models.TransientModel):
         if settings_hint:
             lines.append(env._("Settings to change: %(hints)s.", hints="; ".join(settings_hint)))
         assumption = env._(
-            "Counted: published products, shop list pages, categories, blog posts and blog lists, per language "
+            "Counted: published products, shop list pages, categories, blog posts and blog lists and pages of the website builder, per language "
             "of each website. Not counted: pages for other pricelists or countries - add some margin.")
         html = Markup(
             "<p class='fw-bold {css}'>{text}</p>"

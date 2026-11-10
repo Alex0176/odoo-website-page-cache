@@ -1,6 +1,6 @@
 # Website Page Cache for Odoo 19
 
-Serves the public **shop and blog pages** of an Odoo 19 website from a shared cache instead of
+Serves the public **shop, blog and website-builder pages** of an Odoo 19 website from a shared cache instead of
 rendering them again for every visitor, crawler and AI indexer. A cached page is delivered in a few
 milliseconds; the first request after a change renders it again and caches it anew.
 
@@ -14,6 +14,12 @@ Only requests that are guaranteed to produce the same page for everybody:
 * `GET` without query string, anonymous (public) visitor, status 200, `text/html`;
 * `/shop`, `/shop/page/N`, `/shop/category/...`, product pages, `/blog`, blog lists and posts - in
   every language of every website;
+* pages made with the website builder (home page, contact page, ...) - served by the same cache
+  and invalidated by changes to the page, its views, menus, snippets, products and blog posts
+  (dynamic snippets). Switch: *Cache website pages*;
+* a **"Never cache" list** (one path per line, `*` as wildcard, without language prefix, e.g.
+  `/contactus` or `/event/*`) keeps individual pages out of the cache, for example pages with
+  per-visitor content such as a captcha;
 * the cache key contains website, host, language, path, pricelist, fiscal position and the cookie
   consent state, so visitors who would see something different never share an entry;
 * visitors with a cart, a login or any other session state, `?search=...`, filters, checkout and
@@ -33,7 +39,7 @@ Setting *Backend* (Website > Configuration > Reporting > Page cache > Dashboard)
 | Automatic | RAM while everything fits, otherwise files | decided by the maintenance job; stays on RAM while the verdict is "fits" or "tight" |
 
 The dashboard answers *"do the websites fit into RAM at all?"*: it counts the pages (published
-products, shop list pages, categories, blog posts, blog lists, times the languages of each website),
+products, shop list pages, categories, blog posts, blog lists, website-builder pages, times the languages of each website),
 measures the real size of the cached pages (a default is used until something is cached), and
 compares the result with the configured RAM budget, the size of the tmpfs and half of the available
 memory. Verdicts: *fits*, *tight*, *too big*, *unavailable*.

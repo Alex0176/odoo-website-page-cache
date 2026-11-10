@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import HttpCase, TransactionCase, tagged
 
 from .. import changes, fit, settings, store, triggers
 
@@ -113,11 +113,48 @@ class TestPageCache(TransactionCase):
 
     def test_dashboard_settings_and_views(self):
         dash = self.env["website.page.cache.dashboard"].create({})
-        dash.write({"ttl_hours": 6, "backend": "file"})
+        dash.write({"ttl_hours": 6, "backend": "file", "pages": False, "exclude": "/contactus\n/event/*"})
         self.env["ir.config_parameter"].flush_model()
         self.assertEqual(settings.read_params(self.env.cr)["ttl_hours"], "6.0")
         self.assertEqual(settings.read_params(self.env.cr)["backend"], "file")
+        self.assertEqual(settings.read_params(self.env.cr)["pages"], "0")
+        self.assertEqual(settings.read_params(self.env.cr)["exclude"], "/contactus\n/event/*")
         self.assertEqual(settings.read_params(self.env.cr)["enabled"], "1")  # untouched settings stay as they were
         self.assertIn("<table", dash.stats_html)
         self.assertIn("<table", dash.fit_html)
         self.assertTrue(dash.journal_ok)
+
+
+    def test_exclude_patterns(self):
+        patterns = ["/contactus", "/event/*", "# comment"]
+        self.assertTrue(settings.excluded(patterns, "/contactus"))
+        self.assertTrue(settings.excluded(patterns, "/event/summer-2026"))
+        self.assertFalse(settings.excluded(patterns, "/contactus-thank-you"))
+        self.assertFalse(settings.excluded(patterns, "/"))
+
+
+@tagged("post_install", "-at_install")
+class TestBuilderPages(HttpCase):
+    def test_home_page_is_cached_and_follows_settings(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, True)
+        dbname = self.env.cr.dbname
+        self.addCleanup(settings.reset, dbname)
+
+        def params(**override):
+            values = dict(settings.DEFAULTS, backend="file", **override)
+            return patch.object(settings, "read_params", lambda cr: values)
+
+        with patch.object(store, "root", lambda backend, dbname=None: f"{tmp}/{backend}/{dbname or ''}"):
+            with params():
+                settings.reset(dbname)
+                self.assertEqual(self.url_open("/").headers.get("X-Page-Cache"), "MISS")
+                # a HIT cannot be shown here: rendering writes asset attachments inside the test
+                # transaction, which stays "in progress" and marks the stored page stale
+                self.assertEqual(len(list(store.entries("file", dbname))), 1)
+            with params(exclude="/"):
+                settings.reset(dbname)
+                self.assertIsNone(self.url_open("/").headers.get("X-Page-Cache"))
+            with params(pages="0"):
+                settings.reset(dbname)
+                self.assertIsNone(self.url_open("/").headers.get("X-Page-Cache"))
