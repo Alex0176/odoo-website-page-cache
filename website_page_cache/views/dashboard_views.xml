@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="website_page_cache_dashboard_form" model="ir.ui.view">
+        <field name="name">website.page.cache.dashboard.form</field>
+        <field name="model">website.page.cache.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Page cache" create="0" delete="0" duplicate="0">
+                <header>
+                    <button name="action_refresh" type="object" string="Refresh"/>
+                    <button name="action_maintain" type="object" string="Run maintenance now"/>
+                    <button name="action_clear" type="object" string="Clear cache" class="btn-secondary"
+                            confirm="Every cached page is rendered again on its next visit. Continue?"/>
+                    <button name="action_check_triggers" type="object" string="Check change tracking"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-danger" role="alert" invisible="journal_ok">
+                        <field name="journal" readonly="1" nolabel="1"/>
+                    </div>
+                    <group string="Settings">
+                        <group>
+                            <field name="enabled"/>
+                            <field name="backend"/>
+                        </group>
+                        <group>
+                            <field name="ttl_hours"/>
+                            <field name="max_mb_ram"/>
+                            <field name="max_mb_file"/>
+                        </group>
+                    </group>
+                    <group string="Status">
+                        <group>
+                            <field name="backend_in_use"/>
+                            <field name="entries"/>
+                        </group>
+                        <group>
+                            <field name="journal" invisible="not journal_ok"/>
+                        </group>
+                    </group>
+                    <separator string="Statistics"/>
+                    <field name="stats_html" nolabel="1"/>
+                    <separator string="Does it fit into RAM?"/>
+                    <field name="fit_html" nolabel="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="website_page_cache_dashboard_action" model="ir.actions.server">
+        <field name="name">Page cache</field>
+        <field name="model_id" ref="model_website_page_cache_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open()</field>
+    </record>
+
+    <record id="website_page_cache_stat_list" model="ir.ui.view">
+        <field name="name">website.page.cache.stat.list</field>
+        <field name="model">website.page.cache.stat</field>
+        <field name="arch" type="xml">
+            <list string="Page cache statistics" create="0" edit="0">
+                <field name="date"/>
+                <field name="website_id"/>
+                <field name="pid"/>
+                <field name="hits" sum="Total"/>
+                <field name="misses" sum="Total"/>
+                <field name="stored" sum="Total"/>
+                <field name="stale" sum="Total"/>
+                <field name="hit_time" sum="Total"/>
+                <field name="miss_time" sum="Total"/>
+                <field name="bytes_served" sum="Total"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="website_page_cache_stat_graph" model="ir.ui.view">
+        <field name="name">website.page.cache.stat.graph</field>
+        <field name="model">website.page.cache.stat</field>
+        <field name="arch" type="xml">
+            <graph string="Page cache statistics" type="bar" stacked="1">
+                <field name="date" interval="day"/>
+                <field name="website_id"/>
+                <field name="hits" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="website_page_cache_stat_pivot" model="ir.ui.view">
+        <field name="name">website.page.cache.stat.pivot</field>
+        <field name="model">website.page.cache.stat</field>
+        <field name="arch" type="xml">
+            <pivot string="Page cache statistics">
+                <field name="website_id" type="row"/>
+                <field name="date" interval="week" type="col"/>
+                <field name="hits" type="measure"/>
+                <field name="misses" type="measure"/>
+                <field name="stale" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="website_page_cache_stat_search" model="ir.ui.view">
+        <field name="name">website.page.cache.stat.search</field>
+        <field name="model">website.page.cache.stat</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="website_id"/>
+                <filter name="last_7" string="Last 7 days"
+                        domain="[('date', '&gt;=', (context_today() - relativedelta(days=6)).strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="by_website" string="Website" context="{'group_by': 'website_id'}"/>
+                    <filter name="by_day" string="Day" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="website_page_cache_stat_action" model="ir.actions.act_window">
+        <field name="name">Page cache history</field>
+        <field name="res_model">website.page.cache.stat</field>
+        <field name="view_mode">graph,pivot,list</field>
+    </record>
+
+    <menuitem id="menu_website_page_cache" name="Page cache" parent="website.menu_reporting" sequence="30"
+              groups="base.group_system"/>
+    <menuitem id="menu_website_page_cache_dashboard" name="Dashboard" parent="menu_website_page_cache"
+              sequence="10" action="website_page_cache_dashboard_action" groups="base.group_system"/>
+    <menuitem id="menu_website_page_cache_history" name="History" parent="menu_website_page_cache"
+              sequence="20" action="website_page_cache_stat_action" groups="base.group_system"/>
+</odoo>

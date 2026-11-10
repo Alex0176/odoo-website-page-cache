@@ -1,0 +1,542 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* website_page_cache
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-10 09:57+0000\n"
+"PO-Revision-Date: 2026-11-10 09:57+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "%(backend)s (limit %(limit)s)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "%(count)s pages, %(size)s"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "%(rows)s changes in the last 24 hours, watching %(installed)s tables"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "30 days"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "7 days"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields.selection,name:website_page_cache.selection__website_page_cache_dashboard__backend__auto
+msgid "Automatic"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_dashboard__backend
+msgid ""
+"Automatic uses RAM while all pages fit into the RAM budget, otherwise files."
+" RAM is a tmpfs shared by all workers, so pages are held once, not once per "
+"worker."
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__backend
+msgid "Backend"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__backend_in_use
+msgid "Backend In Use"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Barely - the pages fit, but without a safety margin."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Blog posts"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__bytes_served
+msgid "Bytes served from cache"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Cache time"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_stat__misses
+msgid "Cacheable pages that had to be rendered"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__entries
+msgid "Cached pages"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_stat__stale
+msgid "Cached pages thrown away because content changed or expired"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Categories"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__journal
+msgid "Change tracking"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Check change tracking"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Clear cache"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Counted: published products, shop list pages, categories, blog posts and "
+"blog lists, per language of each website. Not counted: pages for other "
+"pricelists or countries - add some margin."
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__create_uid
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__create_date
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.ui.menu,name:website_page_cache.menu_website_page_cache_dashboard
+msgid "Dashboard"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__date
+msgid "Date"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_search
+msgid "Day"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__max_mb_file
+msgid "Disk limit (MB)"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_ir_http__display_name
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__display_name
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_service__display_name
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__fit_html
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Does it fit into RAM?"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__enabled
+msgid "Enabled"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Estimated pages: %(pages)s, about %(size)s each (%(how)s, compressed) = "
+"%(need)s"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Estimated server time saved"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Every cached page is rendered again on its next visit. Continue?"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields.selection,name:website_page_cache.selection__website_page_cache_dashboard__backend__file
+msgid "Files on disk"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model,name:website_page_cache.model_ir_http
+msgid "HTTP Routing"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.ui.menu,name:website_page_cache.menu_website_page_cache_history
+msgid "History"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Hit rate"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__hits
+msgid "Hits"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_ir_http__id
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__id
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_service__id
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__id
+msgid "ID"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"INCOMPLETE - %(missing)s tables are not watched, the cache must not be "
+"trusted"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__stale
+msgid "Invalidated"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__journal_ok
+msgid "Journal Ok"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Languages"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_search
+msgid "Last 7 days"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__write_uid
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__write_date
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__ttl_hours
+msgid "Maximum age (hours)"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__misses
+msgid "Misses"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"No - the pages are larger than the RAM available for the cache. Use files or"
+" raise the RAM budget."
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.constraint,message:website_page_cache.constraint_website_page_cache_stat_date_website_pid
+msgid "One statistics row per day, website and process."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+#: model:ir.actions.server,name:website_page_cache.website_page_cache_dashboard_action
+#: model:ir.ui.menu,name:website_page_cache.menu_website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Page cache"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model,name:website_page_cache.model_website_page_cache_dashboard
+msgid "Page cache dashboard"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.actions.act_window,name:website_page_cache.website_page_cache_stat_action
+msgid "Page cache history"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model,name:website_page_cache.model_website_page_cache_stat
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_graph
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_list
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_pivot
+msgid "Page cache statistics"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.actions.server,name:website_page_cache.ir_cron_page_cache_maintain_ir_actions_server
+msgid "Page cache: maintenance"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Pages"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Pages per language"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_stat__hits
+msgid "Pages served from the cache"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Period"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__pid
+msgid "Process"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Products"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields.selection,name:website_page_cache.selection__website_page_cache_dashboard__backend__ram
+msgid "RAM (shared, tmpfs)"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__max_mb_ram
+msgid "RAM budget (MB)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "RAM cache is not available on this server (no writable /dev/shm)."
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Refresh"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Removed (changed/expired)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Render time"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Render time and cache time are averages per page. Numbers are written once a"
+" minute."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Rendered"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_stat__stored
+msgid "Rendered pages that were written to the cache"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Room for the cache: %(limit)s = the smallest of: RAM budget %(budget)s, "
+"tmpfs size %(tmpfs)s, half of the available memory %(avail)s"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Run maintenance now"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_dashboard__ttl_hours
+msgid ""
+"Safety net only: pages are also removed as soon as something they show "
+"changes."
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_dashboard__enabled
+msgid ""
+"Serve public shop and blog pages from the cache. Switching it off sends "
+"every visitor to the normal rendering at once."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Served from cache"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Settings"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_dashboard__stats_html
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Statistics"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_dashboard_form
+msgid "Status"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__stored
+msgid "Stored"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,help:website_page_cache.field_website_page_cache_dashboard__max_mb_ram
+msgid ""
+"The most memory the RAM cache may use. Also the limit the \"fits into RAM\" "
+"verdict is measured against."
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__hit_time
+msgid "Time spent on hits (s)"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__miss_time
+msgid "Time spent rendering misses (s)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Today"
+msgstr ""
+
+#. module: website_page_cache
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_list
+msgid "Total"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Traffic from cache"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+#: model:ir.model.fields,field_description:website_page_cache.field_website_page_cache_stat__website_id
+#: model_terms:ir.ui.view,arch_db:website_page_cache.website_page_cache_stat_search
+msgid "Website"
+msgstr ""
+
+#. module: website_page_cache
+#: model:ir.model,name:website_page_cache.model_website_page_cache_service
+msgid "Website page cache maintenance"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Yes - the pages fit into RAM with room to spare."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "assumed, nothing cached yet"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "measured average of the cached pages"
+msgstr ""
