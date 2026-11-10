@@ -28,6 +28,14 @@ Only requests that are guaranteed to produce the same page for everybody:
 The CSRF token inside a page is replaced per request, blog post views are still counted, and cached
 responses carry `X-Page-Cache: HIT` (rendered and stored: `MISS`) so you can see what happened.
 
+## Images of companies and contacts
+
+`/web/image/res.partner/<id>/image_128`, `avatar_*`, `res.company` logos and similar URLs without a
+`unique` hash are answered by Odoo with `Cache-Control: no-cache`, so browsers ask again on every page
+view. This module sends `Cache-Control: max-age=2592000` (30 days) for them instead; the ETag stays,
+so a changed image shows up latest after that time. URLs with `unique`, `nocache` or `download` are
+left alone. System parameter `website_page_cache.image_days` changes the days, `0` turns it off.
+
 ## Storage: files or RAM
 
 Setting *Backend* (Website > Configuration > Reporting > Page cache > Dashboard):
