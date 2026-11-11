@@ -36,6 +36,20 @@ view. This module sends `Cache-Control: max-age=2592000` (30 days) for them inst
 so a changed image shows up latest after that time. URLs with `unique`, `nocache` or `download` are
 left alone. System parameter `website_page_cache.image_days` changes the days, `0` turns it off.
 
+## Sitemap
+
+Odoo regenerates `/sitemap.xml` inside the request that finds the stored copy older than 12 hours. With many
+posts and languages that takes 20 to 40 seconds and blocks a worker, and each crawler arriving in that
+window waits too. The module serves the stored copy while it is younger than
+`website_page_cache.sitemap_max_hours` (default 36) and renews it in the background: the hourly cron
+"Page cache: renew sitemaps" picks the website whose copy is oldest and past
+`website_page_cache.sitemap_refresh_hours` (default 8) and calls `/sitemap.xml` on the local server with a
+secret header (parameter `website_page_cache.sitemap_secret`, created by the cron). During that call the
+stored copy is back-dated inside the transaction, so Odoo regenerates it while everybody else keeps
+reading the old copy until the new one is committed. Each domain a crawler uses has its own stored copy
+in Odoo; only the domain set on the website is renewed in the background, the others still fall back to
+the core behaviour once their copy is older than the maximum age.
+
 ## Storage: files or RAM
 
 Setting *Backend* (Website > Configuration > Reporting > Page cache > Dashboard):

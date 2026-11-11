@@ -9,4 +9,13 @@
         <field name="interval_type">minutes</field>
         <field name="active" eval="True"/>
     </record>
+    <record id="ir_cron_page_cache_sitemaps" model="ir.cron">
+        <field name="name">Page cache: renew sitemaps</field>
+        <field name="model_id" ref="model_website_page_cache_service"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sitemaps()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
 </odoo>

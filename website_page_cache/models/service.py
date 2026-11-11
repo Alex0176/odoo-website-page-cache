@@ -1,9 +1,14 @@
 # Copyright 2026 Biricon IT Services GmbH
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 import logging
+import secrets
 import time
+from urllib.parse import urlparse
 
-from odoo import api, models
+import requests
+
+from odoo import api, fields, models
+from odoo.tools import config
 
 from .. import changes, fit, settings, stats, store, triggers
 
@@ -122,6 +127,49 @@ class PageCacheService(models.AbstractModel):
         self._prune()
         stats.flush(self.env.cr.dbname)
         _logger.info("page cache maintenance: %s", removed)
+
+    @api.model
+    def _cron_sitemaps(self):
+        """Renew the stored sitemap of the one website whose copy is the oldest and past
+        ``website_page_cache.sitemap_refresh_hours`` (default 8). One website per run keeps the
+        cron short; the job runs hourly. See ``controllers/sitemap.py``."""
+        from ..controllers.sitemap import PARAM_SECRET, REFRESH_HEADER, sitemap_url
+
+        icp = self.env["ir.config_parameter"].sudo()
+        secret = icp.get_param(PARAM_SECRET)
+        if not secret:
+            secret = secrets.token_hex(16)
+            icp.set_param(PARAM_SECRET, secret)
+        try:
+            refresh_hours = float(icp.get_param("website_page_cache.sitemap_refresh_hours", 8))
+        except (TypeError, ValueError):
+            refresh_hours = 8.0
+        now = fields.Datetime.now()
+        oldest = None
+        for website in self.env["website"].sudo().search([("domain", "!=", False)]):
+            base = website._get_http_domain()
+            if not base:
+                continue
+            attachment = self.env["ir.attachment"].sudo().search(
+                [("url", "=", sitemap_url(website.id, base + "/")), ("type", "=", "binary")], limit=1)
+            age = (now - attachment.create_date).total_seconds() / 3600 if attachment else float("inf")
+            if age >= refresh_hours and (oldest is None or age > oldest[0]):
+                oldest = (age, website, base)
+        if not oldest:
+            return
+        _age, website, base = oldest
+        parsed = urlparse(base)
+        started = time.monotonic()
+        try:
+            response = requests.get(
+                "http://127.0.0.1:%s/sitemap.xml" % config["http_port"],
+                headers={"Host": parsed.netloc, "X-Forwarded-Host": parsed.netloc,
+                         "X-Forwarded-Proto": parsed.scheme, REFRESH_HEADER: secret},
+                timeout=600)
+            _logger.info("page cache: sitemap of website %s renewed (HTTP %s, %.0f s)",
+                         website.id, response.status_code, time.monotonic() - started)
+        except requests.RequestException:
+            _logger.exception("page cache: sitemap of website %s could not be renewed", website.id)
 
     @api.model
     def _clear(self):
