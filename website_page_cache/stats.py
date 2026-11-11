@@ -16,7 +16,11 @@ from odoo.modules.registry import Registry
 _logger = logging.getLogger(__name__)
 
 FLUSH_SECONDS = 60
-FIELDS = ("hits", "misses", "stored", "stale", "hit_time", "miss_time", "bytes_served")
+BASE_FIELDS = ("hits", "misses", "stored", "stale", "hit_time", "miss_time", "bytes_served")
+# Savings (19.0.1.4.0): only for hits whose entry knows its original size; ``hits_unsized`` counts the others.
+SAVING_FIELDS = ("hits_sized", "hits_unsized", "bytes_original", "bytes_minified", "bytes_sent",
+                 "asset_hits", "asset_original", "asset_sent")
+FIELDS = BASE_FIELDS + SAVING_FIELDS
 
 _lock = threading.Lock()
 _counters = {}  # (dbname, website_id) -> {field: number}
@@ -37,6 +41,16 @@ def maybe_flush(dbname):
     flush(dbname)
 
 
+def upsert_sql():
+    columns = ", ".join(FIELDS)
+    marks = ", ".join(["%s"] * len(FIELDS))
+    updates = ",\n".join(f"{f} = website_page_cache_stat.{f} + EXCLUDED.{f}" for f in FIELDS)
+    return (
+        f"INSERT INTO website_page_cache_stat (date, website_id, pid, {columns}, create_date, write_date) "
+        f"VALUES (%s, %s, %s, {marks}, now() AT TIME ZONE 'utc', now() AT TIME ZONE 'utc') "
+        f"ON CONFLICT (date, website_id, pid) DO UPDATE SET {updates}, write_date = now() AT TIME ZONE 'utc'")
+
+
 def flush(dbname):
     with _lock:
         _last_flush[dbname] = time.monotonic()
@@ -49,23 +63,7 @@ def flush(dbname):
     try:
         with Registry(dbname).cursor() as cr:
             for (_db, website_id), values in taken.items():
-                cr.execute(
-                    """
-                    INSERT INTO website_page_cache_stat
-                        (date, website_id, pid, hits, misses, stored, stale, hit_time, miss_time, bytes_served,
-                         create_date, write_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now() AT TIME ZONE 'utc', now() AT TIME ZONE 'utc')
-                    ON CONFLICT (date, website_id, pid) DO UPDATE SET
-                        hits = website_page_cache_stat.hits + EXCLUDED.hits,
-                        misses = website_page_cache_stat.misses + EXCLUDED.misses,
-                        stored = website_page_cache_stat.stored + EXCLUDED.stored,
-                        stale = website_page_cache_stat.stale + EXCLUDED.stale,
-                        hit_time = website_page_cache_stat.hit_time + EXCLUDED.hit_time,
-                        miss_time = website_page_cache_stat.miss_time + EXCLUDED.miss_time,
-                        bytes_served = website_page_cache_stat.bytes_served + EXCLUDED.bytes_served,
-                        write_date = now() AT TIME ZONE 'utc'
-                    """,
-                    [today, website_id, os.getpid()] + [values[f] for f in FIELDS])
+                cr.execute(upsert_sql(), [today, website_id, os.getpid()] + [values[f] for f in FIELDS])
     except Exception:
         _logger.exception("page cache: cannot write statistics")
         with _lock:  # keep the numbers for the next attempt

@@ -149,6 +149,18 @@ server time saved and traffic from cache - today, 7 and 30 days on the dashboard
 website as graph/pivot/list under *History*. Counters are collected per process and written once a
 minute; rows older than 90 days are removed.
 
+### What minify and compression save (since 19.0.1.4.0)
+
+A stored page remembers its size before minify (`size_original`) and after (`size_stored`). Each `HIT` adds to
+the day/website/process counters: bytes without optimisation, bytes after minify and bytes really sent (after gzip,
+or the minified size for clients without gzip). `GZ` hits of `/web/assets` count the uncompressed and the sent
+bytes of the bundle. The dashboard shows both per period (today, 7, 30 days) and website: original, after minify,
+sent, saved MB and %, plus the average per page (minify %, gzip %). Pages stored before the update have no original
+size: their hits are only counted as "without data" and nothing is estimated; they get one when the page is stored
+again. The new counter columns are added with `DEFAULT 0`, so old statistics rows stay valid. The bytes are sums over
+cache hits only (the first rendering of a page is not counted); the original size is the rendered HTML, which is
+what Odoo would have sent without the module.
+
 ## Install
 
 ```

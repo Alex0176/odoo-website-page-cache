@@ -67,7 +67,7 @@ class IrHttp(models.AbstractModel):
                 hit = None
             if hit is not None:
                 stats.count(request.db, ctx["website_id"], hits=1, hit_time=time.monotonic() - started,
-                            bytes_served=len(hit.get_data()))
+                            bytes_served=len(hit.get_data()), **hit._page_cache_sizes)
                 cls._page_cache_flush_stats()
                 return hit
             try:
@@ -103,7 +103,7 @@ class IrHttp(models.AbstractModel):
                 hit = None
             if hit is not None:
                 stats.count(request.db, ctx["website_id"], hits=1, hit_time=time.monotonic() - started,
-                            bytes_served=len(hit.get_data()))
+                            bytes_served=len(hit.get_data()), **hit._page_cache_sizes)
                 cls._page_cache_flush_stats()
                 return hit
             try:
@@ -217,8 +217,10 @@ class IrHttp(models.AbstractModel):
             store.drop(path)
             stats.count(request.db, ctx["website_id"], stale=1)
             return None
+        stored_size = len(body)
         if CSRF_PLACEHOLDER in body:
             body = body.replace(CSRF_PLACEHOLDER, request.csrf_token().encode())
+        minified_size = len(body)
         headers = [tuple(h) for h in meta["headers"]]
         gzipped = False
         if ctx["compress"] and len(body) >= compress.MIN_SIZE and compress.accepts_gzip(
@@ -239,12 +241,27 @@ class IrHttp(models.AbstractModel):
         if gzipped:
             response.headers["Content-Length"] = str(len(body))
         response.headers["X-Page-Cache"] = "HIT"
+        response._page_cache_sizes = cls._page_cache_saving(meta, stored_size, minified_size, len(body))
         post_id = meta.get("blog_post_id")
         if post_id:
             cls._page_cache_count_blog_visit(post_id)
         if cls.is_a_bot():
             request.session.can_save = False
         return response
+
+    @staticmethod
+    def _page_cache_saving(meta, stored_size, minified_size, sent_size):
+        """Counters of one hit: what it would have cost without minify and compression.
+
+        Entries stored before 19.0.1.4.0 have no ``size_original``: they are counted as
+        ``hits_unsized`` and nothing is estimated. The CSRF token has a different length than its
+        placeholder, so the original size is corrected by the same difference.
+        """
+        original = meta.get("size_original")
+        if not isinstance(original, (int, float)) or isinstance(original, bool) or original <= 0:
+            return {"hits_unsized": 1}
+        return {"hits_sized": 1, "bytes_original": original + (minified_size - stored_size),
+                "bytes_minified": minified_size, "bytes_sent": sent_size}
 
     @classmethod
     def _page_cache_count_blog_visit(cls, post_id):
@@ -310,6 +327,8 @@ class IrHttp(models.AbstractModel):
         if sid and sid in body:
             _logger.warning("page cache: session id in page %s, not cached", request.httprequest.path)
             return response
+        # sizes with the CSRF token already replaced, as in the stored body
+        original_size = len(CSRF_TOKEN.sub(CSRF_PLACEHOLDER, body))
         if ctx["minify"]:
             try:
                 minified = minify.minify(body)
@@ -335,6 +354,8 @@ class IrHttp(models.AbstractModel):
             "host": request.httprequest.host,
             "lang": request.lang.code,
             "website_id": ctx["website_id"],
+            "size_original": original_size,
+            "size_stored": len(body),
         }
         if getattr(main_object, "_name", None) == "blog.post" and BLOG_POST_PATH.match(path):
             meta["blog_post_id"] = main_object.id

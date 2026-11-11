@@ -13,12 +13,13 @@ gzip the module compresses each bundle once, keeps the copy on disk (``page_cach
 there afterwards (parameter ``website_page_cache.compress``).
 """
 import logging
+import re
 
 from odoo.http import Response, request, route
 from odoo.addons.web.controllers.binary import ANY_UNIQUE, Binary
 from odoo.addons.website.controllers.binary import WebsiteBinary
 
-from .. import compress, settings, store
+from .. import compress, settings, stats, store
 
 _logger = logging.getLogger(__name__)
 
@@ -55,6 +56,27 @@ def _asset_response(meta, data):
     return response
 
 
+ASSET_WEBSITE = re.compile(r"^/web/assets/(\d+)/")
+
+
+def _asset_website_id(path):
+    """The website of ``/web/assets/<website_id>/...`` if it exists (a statistics row needs a real website)."""
+    match = ASSET_WEBSITE.match(path)
+    if not match:
+        return None
+    return request.env["website"].sudo().browse(int(match.group(1))).exists().id or None
+
+
+def _asset_count(meta, data):
+    """Original (uncompressed) vs. sent bytes of a gzip copy; copies made before 19.0.1.4.0 are not counted."""
+    original = meta.get("size_original")
+    website_id = meta.get("website_id")
+    if not isinstance(original, (int, float)) or isinstance(original, bool) or original <= 0 or not website_id:
+        return
+    stats.count(request.db, website_id, asset_hits=1, asset_original=original, asset_sent=len(data))
+    stats.maybe_flush(request.db)
+
+
 def _asset_store(key, response):
     if (
         not isinstance(response, Response)
@@ -71,7 +93,8 @@ def _asset_store(key, response):
         return response
     data = compress.gzip_bytes(raw)
     meta = {"content_type": response.headers.get("Content-Type"),
-            "cache_control": response.headers.get("Cache-Control")}
+            "cache_control": response.headers.get("Cache-Control"), "size_original": len(raw),
+            "website_id": _asset_website_id(request.httprequest.path)}
     if len(data) >= len(raw) or not store.asset_save(request.db, key, meta, data):
         return response
     return _asset_response(meta, data)
@@ -85,6 +108,7 @@ def serve_asset(unique, nocache, render):
         if key:
             found = store.asset_load(request.db, key)
             if found:
+                _asset_count(*found)
                 return _asset_response(*found)
     except Exception:
         _logger.exception("page cache: asset lookup failed")

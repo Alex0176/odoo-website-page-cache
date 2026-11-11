@@ -612,3 +612,89 @@ msgstr ""
 #: code:addons/website_page_cache/models/dashboard.py:0
 msgid "raise the RAM budget to at least %(size)s"
 msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Pages measured"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Original (without optimisation)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "After minify"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Sent (compressed)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Saved"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Saved %"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Assets: original"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Assets: sent (gzip)"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Assets: saved"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "All websites"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid "Saved by minify and compression"
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Average per page (30 days, %(count)s measured hits): original "
+"%(orig)s, after minify %(mini)s, sent %(sent)s - minify saves "
+"%(minify)s, gzip a further %(gzip)s (clients without gzip count with "
+"no saving), together %(both)s."
+msgstr ""
+
+#. module: website_page_cache
+#. odoo-python
+#: code:addons/website_page_cache/models/dashboard.py:0
+msgid ""
+"Without data (not estimated): %(hits)s hits of pages stored before "
+"the update (30 days), %(entries)s of %(inspected)s cached pages have "
+"no original size yet and are measured once they are stored again. "
+"Assets: only gzip copies made after the update are counted."
+msgstr ""

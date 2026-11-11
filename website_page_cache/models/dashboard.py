@@ -142,6 +142,91 @@ class PageCacheDashboard(models.TransientModel):
                 "hits:sum", "misses:sum", "stale:sum", "hit_time:sum", "miss_time:sum", "bytes_served:sum"])
         return [v or 0 for v in result[0]] if result else [0] * 6
 
+    SAVING_FIELDS = ("hits_sized", "hits_unsized", "bytes_original", "bytes_minified", "bytes_sent",
+                     "asset_hits", "asset_original", "asset_sent")
+
+    def _saving_window(self, days):
+        """``{website name: {field: sum}}`` plus the key ``None`` for the total, for the last ``days`` days."""
+        stat = self.env["website.page.cache.stat"].sudo()
+        since = fields.Date.today() - timedelta(days=days - 1)
+        rows = stat._read_group(
+            [("date", ">=", since)], groupby=["website_id"], aggregates=[f"{f}:sum" for f in self.SAVING_FIELDS])
+        result = {None: dict.fromkeys(self.SAVING_FIELDS, 0)}
+        for website, *values in rows:
+            line = {f: v or 0 for f, v in zip(self.SAVING_FIELDS, values)}
+            result[website.display_name] = line
+            for name, value in line.items():
+                result[None][name] += value
+        return result
+
+    @staticmethod
+    def _percent(part, whole):
+        return f"{100 * part / whole:.1f} %" if whole else "-"
+
+    def _unsized_entries(self):
+        """``(entries without size data, entries inspected)`` among the newest cached pages."""
+        st = settings.get(self.env.cr, self.env.cr.dbname)
+        newest = sorted(store.entries(st["backend"], self.env.cr.dbname), key=lambda e: e[2], reverse=True)[:1000]
+        unsized = 0
+        for path, _size, _mtime in newest:
+            meta = store.read_meta(path) or {}
+            if not meta.get("size_original"):
+                unsized += 1
+        return unsized, len(newest)
+
+    def _saving_html(self):
+        env = self.env
+        head = "".join(f"<th class='text-end'>{escape(h)}</th>" if i > 1 else f"<th>{escape(h)}</th>" for i, h in enumerate((
+            env._("Period"), env._("Website"), env._("Pages measured"), env._("Original (without optimisation)"),
+            env._("After minify"), env._("Sent (compressed)"), env._("Saved"), env._("Saved %"),
+            env._("Assets: original"), env._("Assets: sent (gzip)"), env._("Assets: saved"))))
+        body = ""
+        for label, days in ((env._("Today"), 1), (env._("7 days"), 7), (env._("30 days"), 30)):
+            window = self._saving_window(days)
+            names = [None] + sorted(n for n in window if n)
+            for name in names:
+                v = window[name]
+                if name and not (v["hits_sized"] or v["asset_hits"]):
+                    continue
+                saved = v["bytes_original"] - v["bytes_sent"]
+                asset_saved = v["asset_original"] - v["asset_sent"]
+                cells = [label if name is None else "", env._("All websites") if name is None else name,
+                         f"{v['hits_sized']:,}", human_bytes(v["bytes_original"]), human_bytes(v["bytes_minified"]),
+                         human_bytes(v["bytes_sent"]), human_bytes(saved) if v["hits_sized"] else "-",
+                         self._percent(saved, v["bytes_original"]),
+                         human_bytes(v["asset_original"]), human_bytes(v["asset_sent"]),
+                         f"{human_bytes(asset_saved)} ({self._percent(asset_saved, v['asset_original'])})"
+                         if v["asset_hits"] else "-"]
+                css = " class='fw-bold'" if name is None else ""
+                body += f"<tr{css}>" + "".join(
+                    f"<td class='text-end'>{escape(c)}</td>" if i > 1 else f"<td>{escape(c)}</td>"
+                    for i, c in enumerate(cells)) + "</tr>"
+        total = self._saving_window(30)[None]
+        sized = total["hits_sized"]
+        average = ""
+        if sized:
+            per = lambda key: total[key] / sized  # noqa: E731
+            average = env._(
+                "Average per page (30 days, %(count)s measured hits): original %(orig)s, after minify %(mini)s, "
+                "sent %(sent)s - minify saves %(minify)s, gzip a further %(gzip)s (clients without gzip count "
+                "with no saving), together %(both)s.",
+                count=f"{sized:,}", orig=human_bytes(per("bytes_original")), mini=human_bytes(per("bytes_minified")),
+                sent=human_bytes(per("bytes_sent")),
+                minify=self._percent(total["bytes_original"] - total["bytes_minified"], total["bytes_original"]),
+                gzip=self._percent(total["bytes_minified"] - total["bytes_sent"], total["bytes_minified"]),
+                both=self._percent(total["bytes_original"] - total["bytes_sent"], total["bytes_original"]))
+        unsized_entries, inspected = self._unsized_entries()
+        note = env._(
+            "Without data (not estimated): %(hits)s hits of pages stored before the update (30 days), "
+            "%(entries)s of %(inspected)s cached pages have no original size yet and are measured once they are "
+            "stored again. Assets: only gzip copies made after the update are counted.",
+            hits=f"{total['hits_unsized']:,}", entries=unsized_entries, inspected=inspected)
+        return Markup(
+            "<h5>{title}</h5><table class='table table-sm'><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+            "<p>{average}</p><p class='text-muted'>{note}</p>").format(
+            title=env._("Saved by minify and compression"), head=Markup(head), body=Markup(body),
+            average=average, note=note)
+
     def _compute_stats_html(self):
         env = self.env
         head = "".join(f"<th class='text-end'>{escape(h)}</th>" if i else f"<th>{escape(h)}</th>" for i, h in enumerate((
@@ -165,7 +250,8 @@ class PageCacheDashboard(models.TransientModel):
         note = env._("Render time and cache time are averages per page. Numbers are written once a minute.")
         html = Markup(
             "<table class='table table-sm'><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
-            "<p class='text-muted'>{note}</p>").format(head=Markup(head), body=Markup(body), note=note)
+            "<p class='text-muted'>{note}</p>{saving}").format(
+            head=Markup(head), body=Markup(body), note=note, saving=self._saving_html())
         for rec in self:
             rec.stats_html = html
 
