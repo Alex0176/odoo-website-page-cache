@@ -161,6 +161,12 @@ again. The new counter columns are added with `DEFAULT 0`, so old statistics row
 cache hits only (the first rendering of a page is not counted); the original size is the rendered HTML, which is
 what Odoo would have sent without the module.
 
+### Translations file (since 19.0.1.5.0)
+
+`/website/translations` (the JSON file with all frontend terms, about 600 KB for German) is sent by Odoo without compression and loaded
+once per visitor and language. For clients that accept gzip it is compressed per request (parameter `compress`); it is not stored,
+because its URL often has no hash and a stored copy could outlive a changed translation. Sent size: roughly a fifth.
+
 ## Install
 
 ```

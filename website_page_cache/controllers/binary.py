@@ -10,13 +10,15 @@ Parameter ``website_page_cache.image_days`` (default 30, 0 = leave Odoo's header
 
 ``/web/assets/...`` bundles (versioned URLs, immutable) are answered by Odoo uncompressed. For clients that accept
 gzip the module compresses each bundle once, keeps the copy on disk (``page_cache/assets_gz``) and sends it from
-there afterwards (parameter ``website_page_cache.compress``).
+there afterwards (parameter ``website_page_cache.compress``). The translations file ``/website/translations`` is
+compressed per request (not stored: its URL often has no hash).
 """
 import logging
 import re
 
 from odoo.http import Response, request, route
 from odoo.addons.web.controllers.binary import ANY_UNIQUE, Binary
+from odoo.addons.http_routing.controllers.main import Routing
 from odoo.addons.website.controllers.binary import WebsiteBinary
 
 from .. import compress, settings, stats, store
@@ -165,3 +167,37 @@ class PageCacheBinary(Binary):
             return
         response.cache_control.pop("no-cache", None)
         response.cache_control.max_age = int(days * 86400)
+
+
+class PageCacheRouting(Routing):
+    @route()  # keep the parent's route unchanged
+    def get_website_translations(self, hash=None, lang=None, mods=None):
+        """gzip for ``/website/translations``, a JSON file of several hundred KB that every first visit loads.
+
+        Not stored: the URL often carries no hash, so a stored copy could outlive a changed translation.
+        Compressing it again costs a few milliseconds and the browser keeps the answer for a year anyway.
+        """
+        response = super().get_website_translations(hash=hash, lang=lang, mods=mods)
+        try:
+            httprequest = request.httprequest
+            if (
+                isinstance(response, Response)
+                and response.status_code == 200
+                and not response.headers.get("Content-Encoding")
+                and "json" in (response.mimetype or "")
+                and compress.accepts_gzip(httprequest.headers.get("Accept-Encoding"))
+                and settings.get(request.env.cr, request.db)["compress"]
+            ):
+                if response.direct_passthrough:
+                    response.direct_passthrough = False
+                raw = response.get_data()
+                if len(raw) >= compress.MIN_SIZE:
+                    data = compress.gzip_bytes(raw)
+                    if len(data) < len(raw):
+                        response.set_data(data)
+                        response.headers["Content-Encoding"] = "gzip"
+                        response.headers["Content-Length"] = str(len(data))
+                        response.headers["Vary"] = "Accept-Encoding"
+        except Exception:
+            _logger.exception("page cache: compressing the translations failed")
+        return response
