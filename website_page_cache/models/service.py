@@ -147,9 +147,11 @@ class PageCacheService(models.AbstractModel):
         now = fields.Datetime.now()
         oldest = None
         for website in self.env["website"].sudo().search([("domain", "!=", False)]):
-            base = website._get_http_domain()
+            base = (website.domain or "").strip().rstrip("/")
             if not base:
                 continue
+            if not base.startswith(("http://", "https://")):
+                base = "https://" + base
             attachment = self.env["ir.attachment"].sudo().search(
                 [("url", "=", sitemap_url(website.id, base + "/")), ("type", "=", "binary")], limit=1)
             age = (now - attachment.create_date).total_seconds() / 3600 if attachment else float("inf")
