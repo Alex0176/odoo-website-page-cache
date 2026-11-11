@@ -20,13 +20,25 @@ Only requests that are guaranteed to produce the same page for everybody:
 * a **"Never cache" list** (one path per line, `*` as wildcard, without language prefix, e.g.
   `/contactus` or `/event/*`) keeps individual pages out of the cache, for example pages with
   per-visitor content such as a captcha;
-* the cache key contains website, host, language, path, pricelist, fiscal position and the cookie
-  consent state, so visitors who would see something different never share an entry;
+* the cache key contains website, host class, language, path, pricelist, fiscal position and the cookie
+  consent state, so visitors who would see something different never share an entry. The host is
+  normalized (see below) so that crawlers and alias hosts do not each get their own copy;
 * visitors with a cart, a login or any other session state, `?search=...`, filters, checkout and
   forms are never touched.
 
 The CSRF token inside a page is replaced per request, blog post views are still counted, and cached
 responses carry `X-Page-Cache: HIT` (rendered and stored: `MISS`) so you can see what happened.
+
+## Host normalization
+
+Odoo writes every absolute URL (canonical link, `og:url`, hreflang, JSON-LD, sitemap) from the website's
+`domain`, not from the `Host` header. The request URL only decides two things in the page: whether it is
+the canonical URL (hreflang links) and whether it is indexable (matches the domain ignoring `www.` and
+the scheme; otherwise `<meta name="robots" content="noindex">`). The key therefore holds `canonical` for the
+website's own domain, `other:1` for indexable but non-canonical URLs (`http://`, bare domain) and `other:0`
+for every foreign host: one entry serves all crawler and alias hosts, they keep their `noindex` page, and the
+canonical page is never served to a foreign host. Switch: `website_page_cache.normalize_host`
+(default `1`, `0` = raw host in the key).
 
 ## Images of companies and contacts
 
@@ -148,7 +160,7 @@ triggers and a maintenance cron (every 10 minutes). **Uninstalling** removes tri
 and all cached pages.
 
 Parameters (`ir.config_parameter`, normally edited on the dashboard): `website_page_cache.enabled`,
-`.backend` (`auto`/`file`/`ram`), `.ttl_hours`, `.max_mb_file`, `.max_mb_ram`, `.minify`, `.compress`, `.persist`.
+`.backend` (`auto`/`file`/`ram`), `.ttl_hours`, `.max_mb_file`, `.max_mb_ram`, `.minify`, `.compress`, `.persist`, `.normalize_host`.
 Switching the cache off (`enabled = 0`) takes effect in all workers within 30 seconds.
 
 ## Limits worth knowing

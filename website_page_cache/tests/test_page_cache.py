@@ -2,7 +2,7 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 import shutil
 import tempfile
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from odoo.tests import HttpCase, TransactionCase, tagged
 
@@ -131,6 +131,37 @@ class TestPageCache(TransactionCase):
         self.assertTrue(settings.excluded(patterns, "/event/summer-2026"))
         self.assertFalse(settings.excluded(patterns, "/contactus-thank-you"))
         self.assertFalse(settings.excluded(patterns, "/"))
+
+    def test_host_key_is_normalized(self):
+        from ..models.ir_http import IrHttp
+
+        def key(canonical, indexable, host="h", normalize=True):
+            website = Mock()
+            website._is_canonical_url.return_value = canonical
+            website._is_indexable_url.return_value = indexable
+            req = Mock(httprequest=Mock(host=host, url_root="https://%s/" % host))
+            with patch("odoo.addons.website_page_cache.models.ir_http.request", req):
+                return IrHttp._page_cache_host_key(website, normalize)
+
+        self.assertEqual(key(True, True, "www.example.com"), "canonical")
+        # foreign hosts share one entry (they all carry the noindex page) ...
+        self.assertEqual(key(False, False, "a.example.net"), key(False, False, "b.example.org"))
+        # ... which is neither the canonical page nor the indexable non-canonical one (http://, bare domain)
+        self.assertNotEqual(key(False, False), key(False, True))
+        self.assertNotEqual(key(True, True), key(False, True))
+        self.assertNotEqual(key(True, True), key(False, False))
+        # switched off: the raw host as before
+        self.assertEqual(key(False, False, "a.example.net", normalize=False), "a.example.net")
+        self.assertEqual(settings.DEFAULTS["normalize_host"], "1")
+
+        # a failing canonical check falls back to the raw host instead of sharing anything
+        website = Mock()
+        website._is_canonical_url.side_effect = RuntimeError
+        req = Mock(httprequest=Mock(host="x.example.net"))
+        with patch("odoo.addons.website_page_cache.models.ir_http.request", req), self.assertLogs(
+            "odoo.addons.website_page_cache.models.ir_http", "ERROR"
+        ):
+            self.assertEqual(IrHttp._page_cache_host_key(website, True), "x.example.net")
 
 
 @tagged("post_install", "-at_install")

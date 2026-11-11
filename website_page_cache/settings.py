@@ -22,6 +22,7 @@ DEFAULTS = {
     "minify": "1",
     "compress": "1",
     "persist": "1",
+    "normalize_host": "1",
 }
 
 _lock = threading.Lock()
@@ -72,6 +73,7 @@ def get(cr, dbname):
                         if line.strip() and not line.strip().startswith("#")],
             "minify": params["minify"].strip().lower() not in ("0", "false", "no", ""),
             "compress": params["compress"].strip().lower() not in ("0", "false", "no", ""),
+            "normalize_host": params["normalize_host"].strip().lower() not in ("0", "false", "no", ""),
             "persist": params["persist"].strip().lower() not in ("0", "false", "no", ""),
             "ttl": max(60, int(_number(params["ttl_hours"], 12) * 3600)),
             "max_bytes": int(_number(params["max_mb_ram" if backend == "ram" else "max_mb_file"], 256) * 1048576),

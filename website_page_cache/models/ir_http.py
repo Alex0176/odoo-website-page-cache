@@ -163,7 +163,7 @@ class IrHttp(models.AbstractModel):
         pricelist = getattr(request, "pricelist", None)
         fiscal_position = getattr(request, "fiscal_position", None)
         key = [
-            website.id, httprequest.host, request.lang.code, httprequest.path,
+            website.id, cls._page_cache_host_key(website, st["normalize_host"]), request.lang.code, httprequest.path,
             pricelist.id if pricelist else 0,
             fiscal_position.id if fiscal_position else 0,
             bool(website._allConsentsGranted()),
@@ -171,6 +171,28 @@ class IrHttp(models.AbstractModel):
         index = changes.refresh(cr, request.db, st["ttl"] + 3600)
         return {"key": key, "backend": st["backend"], "ttl": st["ttl"], "max_bytes": st["max_bytes"],
                 "index": index, "minify": st["minify"], "compress": st["compress"], "website_id": website.id, "builder_page": endpoint is None}
+
+    @classmethod
+    def _page_cache_host_key(cls, website, normalize):
+        """The host part of the cache key.
+
+        Odoo writes absolute URLs from ``website.domain``, never from the Host header; the request URL only
+        decides two things in the page: whether it is the canonical URL (hreflang links) and whether it is
+        indexable, i.e. matches the domain ignoring ``www.`` and the scheme (``<meta name="robots"
+        content="noindex">`` otherwise). Requests agreeing on both share an entry: ``canonical`` for the
+        website's own domain, ``other:1`` for e.g. ``http://`` or the bare domain, ``other:0`` for every
+        foreign host (crawlers, unknown hosts), which keep their noindex page.
+        """
+        httprequest = request.httprequest
+        if not normalize:
+            return httprequest.host
+        try:
+            if website._is_canonical_url():
+                return "canonical"
+            return "other:%d" % bool(website._is_indexable_url(httprequest.url_root))
+        except Exception:
+            _logger.exception("page cache: canonical check failed, key uses the host")
+            return httprequest.host
 
     @classmethod
     def _page_cache_plain_path(cls):
