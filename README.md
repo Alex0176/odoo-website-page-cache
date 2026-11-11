@@ -50,6 +50,35 @@ reading the old copy until the new one is committed. Each domain a crawler uses 
 in Odoo; only the domain set on the website is renewed in the background, the others still fall back to
 the core behaviour once their copy is older than the maximum age.
 
+## Minify and compression
+
+**HTML minify** (`website_page_cache.minify`, default `1`): before a page is stored, `minify.py` shrinks the
+HTML (typically 10 to 30 %, about 10 % after gzip). The page that is rendered for the first request (`MISS`)
+is minified in the same way, so `MISS` and `HIT` are identical. It is deliberately conservative:
+
+* HTML comments go (conditional comments and `<!--!` stay); runs of white space become one space, and white
+  space is removed completely only around block elements, table parts and `<br>`, where the browser ignores
+  it anyway. A tag that says `inline`, `display`, `float` or `white-space` is not treated as a block, so the gap
+  between two inline blocks stays; elements with `white-space: pre*` are not touched;
+* `<pre>`, `<textarea>` and `<script>` are not touched (no renaming, no white space removal in inline
+  JavaScript); `<script type="application/ld+json">` is re-serialised compactly when it parses, else left as is;
+  `<style>` gets a simple CSS minification that respects strings and `url()`;
+* anything unexpected (unclosed raw-text element, invalid UTF-8, no gain) returns the original, and an exception
+  is logged and the page is delivered as rendered.
+
+Tried on seven real pages of five websites with a browser (JavaScript off): text, element count, the
+position of every element and the screenshot were identical to the original. Pages already in the cache are
+not minified again; they are replaced when they expire or change.
+
+**Compression** (`website_page_cache.compress`, default `1`): a cache `HIT` is delivered gzip-compressed
+(`Content-Encoding: gzip`, `Vary: Accept-Encoding`, correct `Content-Length`) when the client sends
+`Accept-Encoding: gzip`; the CSRF token is put in before compressing. The `/web/assets/*.css|js` bundles
+(versioned URLs, immutable) are answered by Odoo uncompressed, up to several MB. For gzip clients the module
+compresses each bundle once and keeps the copy under `<data_dir>/page_cache/assets_gz/<db>/`; later requests
+are served from there (`X-Page-Cache: GZ`, `Cache-Control` and `Content-Type` as in the original). The copies
+are removed after 30 days, or oldest first when the folder exceeds 256 MB (maintenance job), and by *clear
+cache*. A proxy in front must not compress an answer that already has `Content-Encoding` a second time.
+
 ## Storage: files or RAM
 
 Setting *Backend* (Website > Configuration > Reporting > Page cache > Dashboard):
@@ -68,6 +97,17 @@ memory. Verdicts: *fits*, *tight*, *too big*, *unavailable*.
 It also states how much additional RAM a RAM cache would need on the server (including a safety
 margin, and respecting that the cache may use at most half of the available memory) and which
 settings to change (RAM budget, tmpfs size).
+
+### RAM cache and host reboots
+
+tmpfs survives a restart of Odoo but not a reboot of the host. With `website_page_cache.persist` (default `1`)
+and the RAM backend, the maintenance job copies new and changed entries (only those) to
+`<data_dir>/page_cache_mirror/<db>/` (atomic, at most the RAM budget) and removes entries that are gone from RAM.
+When Odoo starts and the RAM directory is empty, the entries are copied back (at most a few seconds at start,
+the maintenance job finishes a larger restore; the mirror is not pruned meanwhile). Restored entries are judged like
+any other: age and the change journal decide, a page that changed while the host was down is discarded on
+first use. Emptying the cache or recreating the journal empties the mirror too. Restored pages keep the
+minification they were stored with; they are not recomputed.
 
 ## Changes remove pages from the cache
 
@@ -108,7 +148,7 @@ triggers and a maintenance cron (every 10 minutes). **Uninstalling** removes tri
 and all cached pages.
 
 Parameters (`ir.config_parameter`, normally edited on the dashboard): `website_page_cache.enabled`,
-`.backend` (`auto`/`file`/`ram`), `.ttl_hours`, `.max_mb_file`, `.max_mb_ram`.
+`.backend` (`auto`/`file`/`ram`), `.ttl_hours`, `.max_mb_file`, `.max_mb_ram`, `.minify`, `.compress`, `.persist`.
 Switching the cache off (`enabled = 0`) takes effect in all workers within 30 seconds.
 
 ## Limits worth knowing

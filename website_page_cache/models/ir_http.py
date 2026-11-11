@@ -9,7 +9,7 @@ from odoo import models
 from odoo.http import Response, request
 from odoo.tools import sql
 
-from .. import changes, settings, stats, store
+from .. import changes, compress, minify, settings, stats, store
 
 _logger = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ class IrHttp(models.AbstractModel):
         ]
         index = changes.refresh(cr, request.db, st["ttl"] + 3600)
         return {"key": key, "backend": st["backend"], "ttl": st["ttl"], "max_bytes": st["max_bytes"],
-                "index": index, "website_id": website.id, "builder_page": endpoint is None}
+                "index": index, "minify": st["minify"], "compress": st["compress"], "website_id": website.id, "builder_page": endpoint is None}
 
     @classmethod
     def _page_cache_plain_path(cls):
@@ -197,10 +197,25 @@ class IrHttp(models.AbstractModel):
             return None
         if CSRF_PLACEHOLDER in body:
             body = body.replace(CSRF_PLACEHOLDER, request.csrf_token().encode())
+        headers = [tuple(h) for h in meta["headers"]]
+        gzipped = False
+        if ctx["compress"] and len(body) >= compress.MIN_SIZE and compress.accepts_gzip(
+            request.httprequest.headers.get("Accept-Encoding")
+        ):
+            try:
+                body = compress.gzip_bytes(body)
+                headers.append(("Content-Encoding", "gzip"))
+                gzipped = True
+            except Exception:
+                _logger.exception("page cache: compression failed, sending the page as it is")
         response = Response(
-            body, status=200, headers=[tuple(h) for h in meta["headers"]],
+            body, status=200, headers=headers,
             qcontext={"response_template": meta.get("template")},
         )
+        if ctx["compress"]:
+            compress.add_vary(response.headers)
+        if gzipped:
+            response.headers["Content-Length"] = str(len(body))
         response.headers["X-Page-Cache"] = "HIT"
         post_id = meta.get("blog_post_id")
         if post_id:
@@ -273,6 +288,14 @@ class IrHttp(models.AbstractModel):
         if sid and sid in body:
             _logger.warning("page cache: session id in page %s, not cached", request.httprequest.path)
             return response
+        if ctx["minify"]:
+            try:
+                minified = minify.minify(body)
+                if minified is not body:
+                    body = minified
+                    response.set_data(body)
+            except Exception:
+                _logger.exception("page cache: minify failed, page %s stays as rendered", request.httprequest.path)
         body = CSRF_TOKEN.sub(CSRF_PLACEHOLDER, body)
         if CSRF_TOKEN.search(body):
             return response
@@ -297,6 +320,8 @@ class IrHttp(models.AbstractModel):
         if store.save(ctx["backend"], request.db, ctx["key"], meta, body):
             stats.count(request.db, ctx["website_id"], stored=1)
             response.headers["X-Page-Cache"] = "MISS"
+            if ctx["compress"]:
+                compress.add_vary(response.headers)
             if random.random() < 0.01:
                 store.trim(ctx["backend"], request.db, ctx["max_bytes"])
         return response

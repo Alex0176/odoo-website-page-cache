@@ -1,6 +1,7 @@
 # Copyright 2026 Biricon IT Services GmbH
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 import logging
+import os
 import secrets
 import time
 from urllib.parse import urlparse
@@ -29,6 +30,23 @@ class PageCacheService(models.AbstractModel):
             self._ensure_triggers()
         except Exception:
             _logger.exception("page cache: cannot check the change triggers")
+        try:
+            self._restore_mirror(seconds=3.0)
+        except Exception:
+            _logger.exception("page cache: cannot restore the RAM cache from its disk mirror")
+
+    @api.model
+    def _restore_mirror(self, seconds):
+        """After a host reboot the tmpfs is empty: copy the mirrored entries back (validity is checked
+        when an entry is loaded). Takes at most ``seconds``; the maintenance job finishes the rest."""
+        cr = self.env.cr
+        st = settings.get(cr, cr.dbname)
+        if not (st["persist"] and st["backend"] == "ram" and st["ready"]):
+            return 0
+        copied = store.mirror_restore(cr.dbname, seconds)
+        if copied:
+            _logger.info("page cache: %d entries restored from the disk mirror", copied)
+        return copied
 
     @api.model
     def _ensure_triggers(self, force=False):
@@ -82,6 +100,7 @@ class PageCacheService(models.AbstractModel):
             if backend != st["backend"]:
                 removed["inactive"] += store.usage(backend, dbname)[0]
                 store.clear(backend, dbname)
+        removed["assets"] = store.asset_trim(dbname)
         if not st["ready"]:
             return removed
         index = changes.refresh(cr, dbname, st["ttl"] + 3600)
@@ -109,6 +128,23 @@ class PageCacheService(models.AbstractModel):
         return removed
 
     @api.model
+    def _mirror(self):
+        """Keep the disk mirror of the RAM backend current (or remove it when it is not wanted)."""
+        cr = self.env.cr
+        st = settings.get(cr, cr.dbname)
+        if not (st["persist"] and st["backend"] == "ram" and st["ready"]):
+            store.mirror_clear(cr.dbname)
+            return "off"
+        mirror = store.mirror_root(cr.dbname)
+        # a RAM directory that does not exist at all means the host was rebooted: restore, don't prune
+        if os.path.exists(os.path.join(mirror, store.RESTORE_MARKER)) or (
+            os.path.isdir(mirror) and not os.path.isdir(store.root("ram", cr.dbname))
+        ):
+            return f"restored {store.mirror_restore(cr.dbname, 20.0)}"
+        copied, removed = store.mirror_sync(cr.dbname, st["max_bytes"])
+        return f"+{copied} -{removed}"
+
+    @api.model
     def _prune(self):
         cr = self.env.cr
         ttl_days = settings.get(cr, cr.dbname)["ttl"] / 86400
@@ -124,6 +160,7 @@ class PageCacheService(models.AbstractModel):
         self._ensure_triggers()
         self._decide_backend()
         removed = self._sweep()
+        removed["mirror"] = self._mirror()
         self._prune()
         stats.flush(self.env.cr.dbname)
         _logger.info("page cache maintenance: %s", removed)

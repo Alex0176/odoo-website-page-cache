@@ -19,6 +19,9 @@ DEFAULTS = {
     "max_mb_ram": "256",
     "pages": "1",
     "exclude": "",
+    "minify": "1",
+    "compress": "1",
+    "persist": "1",
 }
 
 _lock = threading.Lock()
@@ -67,6 +70,9 @@ def get(cr, dbname):
             "pages": params["pages"].strip().lower() not in ("0", "false", "no", ""),
             "exclude": [line.strip() for line in params["exclude"].splitlines()
                         if line.strip() and not line.strip().startswith("#")],
+            "minify": params["minify"].strip().lower() not in ("0", "false", "no", ""),
+            "compress": params["compress"].strip().lower() not in ("0", "false", "no", ""),
+            "persist": params["persist"].strip().lower() not in ("0", "false", "no", ""),
             "ttl": max(60, int(_number(params["ttl_hours"], 12) * 3600)),
             "max_bytes": int(_number(params["max_mb_ram" if backend == "ram" else "max_mb_file"], 256) * 1048576),
         }
