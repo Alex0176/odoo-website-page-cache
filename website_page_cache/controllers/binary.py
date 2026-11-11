@@ -8,7 +8,7 @@ them. For these images the response gets ``Cache-Control: max-age=<days>`` inste
 image still shows up with the next visit after the max-age, the ETag keeps revalidation cheap.
 Parameter ``website_page_cache.image_days`` (default 30, 0 = leave Odoo's headers alone).
 """
-from odoo.http import request
+from odoo.http import request, route
 from odoo.addons.web.controllers.binary import Binary
 
 IMAGE_MODELS = ("res.partner", "res.company")
@@ -16,6 +16,7 @@ DEFAULT_DAYS = 30
 
 
 class PageCacheBinary(Binary):
+    @route()  # keep the parent's route unchanged
     def content_image(self, xmlid=None, model="ir.attachment", id=None, field="raw", unique=False,
                       nocache=False, download=False, **kw):
         response = super().content_image(

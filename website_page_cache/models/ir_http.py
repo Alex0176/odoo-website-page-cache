@@ -215,7 +215,16 @@ class IrHttp(models.AbstractModel):
         if post_id in request.session.get("posts_viewed", []):
             return
         post = request.env["blog.post"].sudo().browse(post_id)
-        if sql.increment_fields_skiplock(post, "visits"):
+        # In a savepoint: a failing UPDATE (e.g. a concurrent change of the same row under
+        # REPEATABLE READ) must only lose this visit, not abort the visitor's transaction,
+        # which would turn the whole request into a 500.
+        try:
+            with request.env.cr.savepoint():
+                counted = sql.increment_fields_skiplock(post, "visits")
+        except Exception:
+            _logger.warning("page cache: blog visit of post %s not counted", post_id, exc_info=True)
+            return
+        if counted:
             viewed = request.session.get("posts_viewed") or []
             viewed.append(post_id)
             request.session["posts_viewed"] = viewed
