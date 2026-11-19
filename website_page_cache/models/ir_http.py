@@ -117,11 +117,33 @@ class IrHttp(models.AbstractModel):
             try:
                 if result.is_qweb:
                     result.flatten()
-                result = cls._page_cache_store(ctx, result, time.monotonic() - rendered)
+                result = cls._page_cache_store(ctx, cls._page_cache_detach(result), time.monotonic() - rendered)
             except Exception:
                 _logger.exception("page cache: storing failed")
             cls._page_cache_flush_stats()
         return result
+
+    @staticmethod
+    def _page_cache_detach(response):
+        """A copy of a builder page's response that may be changed.
+
+        ``website.page`` keeps the very response it returns in its own ORM cache, with the body as
+        text. Minifying that object in place (``set_data`` stores bytes) or adding headers to it
+        would change the cached page: its next visitor gets "cannot use a string pattern on a
+        bytes-like object", an internal server error until that cache is cleared.
+        """
+        detached = Response(
+            response=list(response.response),
+            status=response.status,
+            headers=response.headers.copy(),
+            mimetype=response.mimetype,
+            content_type=response.content_type,
+        )
+        detached.qcontext = dict(response.qcontext or {})
+        for name in ("_cached_page", "_cached_view_id"):
+            if hasattr(response, name):
+                setattr(detached, name, getattr(response, name))
+        return detached
 
     @classmethod
     def _page_cache_flush_stats(cls):
